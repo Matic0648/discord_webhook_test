@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Webhook Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        discord: {
+                            DEFAULT: '#5865F2',
+                            hover: '#4752C4',
+                            green: '#57F287',
+                            red: '#ED4245',
+                            dark: '#313338',
+                            darker: '#2B2D31',
+                            darkest: '#1E1F22'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Glassmorphism utility */
+        .glass {
+            background: rgba(43, 45, 49, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="bg-discord-darkest text-gray-200 h-full flex flex-col antialiased selection:bg-discord selection:text-white">
+
+    <!-- MAIN CONTAINER -->
+    <div id="app" class="flex-1 flex items-center justify-center p-4 sm:p-6">
+        
+        <!-- LOGIN SCREEN -->
+        <div id="login-view" class="w-full max-w-md space-y-6">
+            <div class="text-center space-y-2">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-discord text-white shadow-lg shadow-discord/30 mb-2">
+                    <i class="fa-brands fa-discord text-3xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-white tracking-tight">Welcome Back</h1>
+                <p class="text-sm text-gray-400">Sign in to access your Discord webhook portal</p>
+            </div>
+
+            <div class="glass p-6 sm:p-8 rounded-2xl shadow-2xl">
+                <!-- Login Alert Message Box -->
+                <div id="login-alert" class="hidden mb-4 p-3.5 rounded-xl text-sm flex items-center gap-3 bg-red-500/10 border border-red-500/30 text-red-400">
+                    <i class="fa-solid fa-circle-exclamation text-base shrink-0"></i>
+                    <span id="login-alert-text">Invalid credentials provided.</span>
+                </div>
+
+                <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label for="username" class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Username</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
+                                <i class="fa-solid fa-user text-sm"></i>
+                            </span>
+                            <input type="text" id="username" required 
+                                class="w-full pl-10 pr-4 py-2.5 bg-discord-dark border border-gray-700/60 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-discord focus:ring-1 focus:ring-discord transition duration-200"
+                                placeholder="Enter username">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Password</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
+                                <i class="fa-solid fa-lock text-sm"></i>
+                            </span>
+                            <input type="password" id="password" required 
+                                class="w-full pl-10 pr-4 py-2.5 bg-discord-dark border border-gray-700/60 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-discord focus:ring-1 focus:ring-discord transition duration-200"
+                                placeholder="••••••••">
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="submit" 
+                            class="w-full py-3 px-4 bg-discord hover:bg-discord-hover text-white font-medium rounded-xl shadow-lg shadow-discord/25 active:scale-[0.99] transition duration-200 flex items-center justify-center gap-2">
+                            <span>Sign In</span>
+                            <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-6 pt-5 border-t border-gray-700/40 text-center text-xs text-gray-500">
+                    <p>Default credentials: <span class="font-mono text-gray-400">admin</span> / <span class="font-mono text-gray-400">admin123</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD SCREEN (HIDDEN BY DEFAULT) -->
+        <div id="dashboard-view" class="hidden w-full max-w-2xl space-y-6">
+            
+            <!-- Navbar Header -->
+            <div class="glass p-4 rounded-2xl flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-discord flex items-center justify-center text-white font-bold">
+                        <i class="fa-brands fa-discord text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-semibold text-white leading-tight">Webhook Control Center</h2>
+                        <span class="inline-flex items-center gap-1.5 text-xs text-emerald-400">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Authenticated
+                        </span>
+                    </div>
+                </div>
+
+                <button onclick="handleLogout()" 
+                    class="px-3.5 py-2 rounded-xl bg-discord-dark hover:bg-gray-700/60 text-gray-300 hover:text-white border border-gray-700/50 text-xs font-medium transition duration-200 flex items-center gap-2">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span class="hidden sm:inline">Logout</span>
+                </button>
+            </div>
+
+            <!-- Main Dashboard Card -->
+            <div class="glass p-6 sm:p-8 rounded-2xl shadow-2xl space-y-6">
+                
+                <!-- Status Feedback Box -->
+                <div id="status-alert" class="hidden p-4 rounded-xl text-sm flex items-start gap-3 transition duration-300">
+                    <i id="status-icon" class="fa-solid text-lg shrink-0 mt-0.5"></i>
+                    <div class="flex-1">
+                        <h4 id="status-title" class="font-semibold mb-0.5">Notification Title</h4>
+                        <p id="status-message" class="text-xs opacity-90">Notification message details go here.</p>
+                    </div>
+                    <button onclick="hideStatusAlert()" class="text-gray-400 hover:text-white">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Webhook URL Configuration -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label for="webhook-url" class="block text-xs font-semibold uppercase tracking-wider text-gray-400">
+                            Discord Webhook URL
+                        </label>
+                        <span id="url-saved-badge" class="hidden text-xs text-emerald-400 flex items-center gap-1">
+                            <i class="fa-solid fa-circle-check"></i> Saved in browser
+                        </span>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
+                            <i class="fa-solid fa-link text-sm"></i>
+                        </span>
+                        <input type="url" id="webhook-url" oninput="saveWebhookUrl()" 
+                            class="w-full pl-10 pr-4 py-2.5 bg-discord-dark border border-gray-700/60 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-discord focus:ring-1 focus:ring-discord transition duration-200 text-sm font-mono"
+                            placeholder="https://discord.com/api/webhooks/123456789/abcdef..."
+                        >
+                    </div>
+                    <p class="text-xs text-gray-500">Paste your Discord webhook URL here. It will be stored locally in your browser.</p>
+                </div>
+
+                <hr class="border-gray-700/40">
+
+                <!-- Message Configuration -->
+                <div class="space-y-4">
+                    <h3 class="text-sm font-semibold text-white tracking-wide uppercase">Payload Configuration</h3>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="bot-username" class="block text-xs font-medium text-gray-400 mb-1">Bot Username (Optional)</label>
+                            <input type="text" id="bot-username" 
+                                class="w-full px-3.5 py-2 bg-discord-dark border border-gray-700/60 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-discord transition duration-200 text-sm"
+                                placeholder="Webhook Dispatcher">
+                        </div>
+                        <div>
+                            <label for="avatar-url" class="block text-xs font-medium text-gray-400 mb-1">Avatar Icon URL (Optional)</label>
+                            <input type="url" id="avatar-url" 
+                                class="w-full px-3.5 py-2 bg-discord-dark border border-gray-700/60 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-discord transition duration-200 text-sm"
+                                placeholder="https://example.com/icon.png">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="message-content" class="block text-xs font-medium text-gray-400 mb-1">Message Content</label>
+                        <textarea id="message-content" rows="4" 
+                            class="w-full px-3.5 py-2.5 bg-discord-dark border border-gray-700/60 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-discord transition duration-200 text-sm"
+                            placeholder="Type your message here... You can use standard Markdown like **bold**, *italics*, or code blocks."></textarea>
+                    </div>
+                </div>
+
+                <!-- Big Trigger Button -->
+                <div class="pt-2">
+                    <button id="send-btn" onclick="sendWebhookMessage()" 
+                        class="w-full py-4 px-6 bg-discord hover:bg-discord-hover text-white font-bold rounded-2xl shadow-xl shadow-discord/30 hover:shadow-discord/50 active:scale-[0.99] transition duration-200 flex items-center justify-center gap-3 text-base group">
+                        <i class="fa-solid fa-paper-plane group-hover:translate-x-1 group-hover:-translate-y-1 transition duration-200"></i>
+                        <span id="send-btn-text">Send Webhook Notification</span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Footer info -->
+            <p class="text-center text-xs text-gray-500">
+                Ready for deployment on <i class="fa-brands fa-github text-gray-400"></i> GitHub Pages
+            </p>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // CONFIGURATION: Set your single username and password here
+        const CONFIG = {
+            USERNAME: "admin",
+            PASSWORD: "123"
+        };
+
+        // App Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAuthSession();
+            loadSavedWebhookUrl();
+        });
+
+        // Auth Logic
+        function checkAuthSession() {
+            const isAuthenticated = sessionStorage.getItem('isLoggedIn') === 'true';
+            const loginView = document.getElementById('login-view');
+            const dashboardView = document.getElementById('dashboard-view');
+
+            if (isAuthenticated) {
+                loginView.classList.add('hidden');
+                dashboardView.classList.remove('hidden');
+            } else {
+                loginView.classList.remove('hidden');
+                dashboardView.classList.add('hidden');
+            }
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const usernameInput = document.getElementById('username').value.trim();
+            const passwordInput = document.getElementById('password').value;
+            const alertBox = document.getElementById('login-alert');
+
+            if (usernameInput === CONFIG.USERNAME && passwordInput === CONFIG.PASSWORD) {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                alertBox.classList.add('hidden');
+                document.getElementById('login-form').reset();
+                checkAuthSession();
+            } else {
+                alertBox.classList.remove('hidden');
+                document.getElementById('login-alert-text').innerText = 'Invalid username or password.';
+            }
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem('isLoggedIn');
+            checkAuthSession();
+            hideStatusAlert();
+        }
+
+        // Webhook Persistence Logic
+        function loadSavedWebhookUrl() {
+            const savedUrl = localStorage.getItem('discord_webhook_url');
+            if (savedUrl) {
+                const urlInput = document.getElementById('webhook-url');
+                urlInput.value = savedUrl;
+                document.getElementById('url-saved-badge').classList.remove('hidden');
+            }
+        }
+
+        function saveWebhookUrl() {
+            const urlInput = document.getElementById('webhook-url').value.trim();
+            const badge = document.getElementById('url-saved-badge');
+            
+            if (urlInput.length > 0) {
+                localStorage.setItem('discord_webhook_url', urlInput);
+                badge.classList.remove('hidden');
+            } else {
+                localStorage.removeItem('discord_webhook_url');
+                badge.classList.add('hidden');
+            }
+        }
+
+        // Trigger Discord Webhook Fetch Request
+        async function sendWebhookMessage() {
+            const webhookUrl = document.getElementById('webhook-url').value.trim();
+            const messageContent = document.getElementById('message-content').value.trim();
+            const botUsername = document.getElementById('bot-username').value.trim();
+            const avatarUrl = document.getElementById('avatar-url').value.trim();
+
+            // Inputs Validation
+            if (!webhookUrl) {
+                showStatusAlert('error', 'Missing Webhook URL', 'Please enter a valid Discord Webhook URL before sending.');
+                return;
+            }
+
+            if (!messageContent) {
+                showStatusAlert('error', 'Empty Message', 'Please enter a message payload to send.');
+                return;
+            }
+
+            // Construct Payload
+            const payload = {
+                content: messageContent
+            };
+
+            if (botUsername) payload.username = botUsername;
+            if (avatarUrl) payload.avatar_url = avatarUrl;
+
+            // UI Loading State
+            setButtonLoading(true);
+
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok || response.status === 204) {
+                    showStatusAlert('success', 'Message Sent Successfully!', 'Your payload was successfully dispatched to Discord.');
+                    document.getElementById('message-content').value = ''; // clear message input
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    const errorMessage = errorData && errorData.message ? errorData.message : `HTTP Status ${response.status}`;
+                    showStatusAlert('error', 'Webhook Error', `Discord rejected the request: ${errorMessage}`);
+                }
+            } catch (error) {
+                showStatusAlert('error', 'Network Error', 'Failed to connect to Discord Webhook URL. Check your URL or internet connection.');
+            } finally {
+                setButtonLoading(false);
+            }
+        }
+
+        // Helper UI Functions
+        function setButtonLoading(isLoading) {
+            const btn = document.getElementById('send-btn');
+            const btnText = document.getElementById('send-btn-text');
+
+            if (isLoading) {
+                btn.disabled = true;
+                btn.classList.add('opacity-75', 'cursor-not-allowed');
+                btnText.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Sending Payload...`;
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                btnText.innerText = 'Send Webhook Notification';
+            }
+        }
+
+        function showStatusAlert(type, title, message) {
+            const alertBox = document.getElementById('status-alert');
+            const icon = document.getElementById('status-icon');
+            const titleEl = document.getElementById('status-title');
+            const messageEl = document.getElementById('status-message');
+
+            alertBox.classList.remove('hidden', 'bg-emerald-500/10', 'border-emerald-500/30', 'text-emerald-300', 'bg-red-500/10', 'border-red-500/30', 'text-red-300', 'border');
+
+            if (type === 'success') {
+                alertBox.classList.add('bg-emerald-500/10', 'border', 'border-emerald-500/30', 'text-emerald-300');
+                icon.className = 'fa-solid fa-circle-check text-lg shrink-0 mt-0.5 text-emerald-400';
+            } else {
+                alertBox.classList.add('bg-red-500/10', 'border', 'border-red-500/30', 'text-red-300');
+                icon.className = 'fa-solid fa-triangle-exclamation text-lg shrink-0 mt-0.5 text-red-400';
+            }
+
+            titleEl.innerText = title;
+            messageEl.innerText = message;
+        }
+
+        function hideStatusAlert() {
+            document.getElementById('status-alert').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
